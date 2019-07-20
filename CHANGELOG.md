@@ -1,3 +1,7 @@
+## 1.5.14 (2019-07-20) Evolution release (Ann)
+* (Stabilostick) update diskusage dependency to prevent build errors and support Node.js 12
+* (Apollon77) Fix Error on setup when defaultCertificate was deleted
+
 ## 1.5.13 (2019-06-3) Evolution release (Ann)
 * (Stabilostick) Make sure Info Adapter Tab is displayed automatically on install
 * (Stabilostick) Optimize messages for some CLI host commands
