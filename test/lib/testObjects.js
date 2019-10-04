@@ -298,7 +298,7 @@ function register(it, expect, context) {
     it(textName + 'should create and read file', done => {
         const objects = context.objects;
         objects.writeFile(testId, 'myFile/abc.txt', 'dataInFile', err => {
-            err && console.error(`Got ${JSON.stringify(objects.getStatus())}: ${err}`);
+            err && console.error(`Got: ${err}`);
             expect(err).to.be.not.ok;
 
             objects.readFile(testId, 'myFile/abc.txt', (err, data, mimeType) => {
