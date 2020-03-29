@@ -797,6 +797,7 @@ function register(it, expect, context) {
     }).timeout(3000);
 
     it(testName + 'should respect different read and write ids', done => {
+        console.log('RETURN #0 START');
         // first we subscribe to all
         context.adapter.subscribeForeignStates('*', err => {
             console.log('RETURN #1 subscribeForeignStates');
@@ -819,7 +820,7 @@ function register(it, expect, context) {
                 native: {},
                 type: 'state'
             }, err => {
-                console.log('RETURN #1 setForeignObject');
+                console.log('RETURN #2 setForeignObject');
                 expect(err).to.not.be.ok;
                 // set our alias read obj
                 context.adapter.setForeignObject(`${gid}readOrig`, {
