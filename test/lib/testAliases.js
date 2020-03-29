@@ -799,6 +799,7 @@ function register(it, expect, context) {
     it(testName + 'should respect different read and write ids', done => {
         // first we subscribe to all
         context.adapter.subscribeForeignStates('*', err => {
+            console.log('RETURN #1 subscribeForeignStates');
             expect(err).to.not.be.ok;
             // define alias with different read and write
             context.adapter.setForeignObject(`${gAliasID}aliasReadWrite`, {
@@ -818,6 +819,7 @@ function register(it, expect, context) {
                 native: {},
                 type: 'state'
             }, err => {
+                console.log('RETURN #1 setForeignObject');
                 expect(err).to.not.be.ok;
                 // set our alias read obj
                 context.adapter.setForeignObject(`${gid}readOrig`, {
@@ -831,6 +833,7 @@ function register(it, expect, context) {
                     native: {},
                     type: 'state'
                 }, err => {
+                    console.log('RETURN #3 setForeignObject');
                     expect(err).to.not.be.ok;
                     // set our write object
                     context.adapter.setForeignObject(`${gid}writeOrig`, {
@@ -844,18 +847,23 @@ function register(it, expect, context) {
                         native: {},
                         type: 'state'
                     }, err => {
+                        console.log('RETURN #4 setForeignObject');
                         expect(err).to.not.be.ok;
                         // set a state to readOrig
                         context.adapter.setForeignState(`${gid}readOrig`, 5, err => {
+                            console.log('RETURN #5 setForeignState');
                             expect(err).to.not.be.ok;
                             // check that our alias has val of read state
                             context.adapter.getForeignState(`${gAliasID}aliasReadWrite`, (err, state) => {
+                                console.log('RETURN #6 getForeignState');
                                 expect(err).to.not.be.ok;
                                 expect(state.val).to.be.equal(5);
                                 // now set the alias
                                 context.adapter.setForeignState(`${gAliasID}aliasReadWrite`, -2, err => {
+                                    console.log('RETURN #7 setForeignState');
                                     expect(err).to.not.be.ok;
                                     context.adapter.getForeignState(`${gid}writeOrig`, (err, state) => {
+                                        console.log('RETURN #8 getForeignState');
                                         expect(err).to.not.be.ok;
                                         expect(state.val).to.be.equal(-2);
                                         done();
