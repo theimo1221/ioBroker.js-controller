@@ -18,6 +18,7 @@
     "iobroker": "./iobroker.js"
   },
   "dependencies": {
+    "@alcalzone/pak": "^0.6.0",
     "@iobroker/db-objects-file": "~1.2.3",
     "@iobroker/db-objects-jsonl": "~1.2.3",
     "@iobroker/db-objects-redis": "~1.2.3",
