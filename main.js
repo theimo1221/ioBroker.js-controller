@@ -1955,56 +1955,89 @@ async function processMessage(msg) {
                                 msg.message = msg.message.repo;
                             }
 
-                            const active = msg.message || systemConfig.common.activeRepo;
+                            let active = msg.message || systemConfig.common.activeRepo;
 
-                            if (repos.native.repositories[active]) {
+                            // convert old format to new one
+                            if (!Array.isArray(active)) {
+                                active = [active];
+                            }
 
-                                if (typeof repos.native.repositories[active] === 'string') {
-                                    repos.native.repositories[active] = {
-                                        link: repos.native.repositories[active],
-                                        json: null
-                                    };
+                            let anyFound = false;
+                            const promises = [];
+                            for (let r = 0; r < active.length; r++) {
+                                const repo = active[r];
+                                if (repos.native.repositories[repo]) {
+                                    anyFound = true;
+                                    if (typeof repos.native.repositories[repo] === 'string') {
+                                        repos.native.repositories[repo] = {
+                                            link: repos.native.repositories[repo],
+                                            json: null
+                                        };
+                                    }
+
+                                    // If repo is not yet loaded
+                                    if (!repos.native.repositories[repo].json || updateRepo) {
+                                        logger.info(`${hostLogPrefix} Updating repository "${repo}" under "${repos.native.repositories[repo].link}"`);
+                                        // Load it
+                                        promises.push(new Promise(resolve => (rep => {
+                                            tools.getRepositoryFile(repos.native.repositories[rep].link, {
+                                                hash:       repos.native.repositories[rep].hash,
+                                                sources:    repos.native.repositories[rep].json,
+                                                controller: version,
+                                                node:       process.version,
+                                                name:       tools.appName
+                                            }, (err, sources, sourcesHash) => {
+                                                if (err) {
+                                                    logger.warn(`${hostLogPrefix} warning: ${err}`);
+                                                }
+
+                                                if (!sources || !Object.keys(sources).length) {
+                                                    logger.warn(`${hostLogPrefix} warning: empty rep received!`);
+                                                } else {
+                                                    repos.native.repositories[rep].json = sources;
+                                                    repos.native.repositories[rep].hash = sourcesHash || '';
+                                                    repos.from = 'system.host.' + tools.getHostName();
+                                                    repos.ts = Date.now();
+                                                }
+                                                resolve();
+                                            });
+                                        })(repo)));
+                                    }
                                 }
+                            }
 
-                                // If repo is not yet loaded
-                                if (!repos.native.repositories[active].json || updateRepo) {
-                                    logger.info(`${hostLogPrefix} Updating repository "${active}" under "${repos.native.repositories[active].link}"`);
-                                    // Load it
-                                    tools.getRepositoryFile(repos.native.repositories[active].link, {
-                                        hash: repos.native.repositories[active].hash,
-                                        sources: repos.native.repositories[active].json,
-                                        controller: version,
-                                        node: process.version,
-                                        name: tools.appName
-                                    }, (err, sources, sourcesHash) => {
-                                        if (err) {
-                                            logger.warn(hostLogPrefix + ' warning: ' + err);
-                                        }
-                                        if (!sources || !Object.keys(sources).length) {
-                                            logger.warn(hostLogPrefix + ' warning: empty repo received!');
-                                            if (repos.native.repositories[active].json) {
-                                                // We have already repo, give it back
-                                                sendTo(msg.from, msg.command, repos.native.repositories[active].json, msg.callback);
-                                            } else {
-                                                sendTo(msg.from, msg.command, null, msg.callback);
-                                            }
-                                        } else {
-                                            repos.native.repositories[active].json = sources;
-                                            repos.native.repositories[active].hash = sourcesHash || '';
-                                            sendTo(msg.from, msg.command, repos.native.repositories[active].json, msg.callback);
-                                            repos.from = 'system.host.' + tools.getHostName();
-                                            repos.ts = Date.now();
-                                            // Store uploaded repo
-                                            objects.setObject('system.repositories', repos);
-                                        }
-                                    });
-                                } else {
-                                    // We have already repo, give it back
-                                    sendTo(msg.from, msg.command, repos.native.repositories[active].json, msg.callback);
-                                }
-                            } else {
-                                logger.warn(`${hostLogPrefix} Requested repository "${active}" does not exist in config.`);
+                            if (!anyFound) {
+                                logger.warn(`${hostLogPrefix} Requested repositories) "${active.join(', ')}" do not exist in config.`);
                                 sendTo(msg.from, msg.command, null, msg.callback);
+                            } else {
+                                if (promises.length) {
+                                    Promise.all(promises)
+                                        .then(() =>
+                                            // Store downloaded repo
+                                            objects.setObject('system.repositories', repos, () => {
+                                                const result = {};
+
+                                                // merge all active repos together
+                                                for (let r = 0; r < active.length; r++) {
+                                                    if (repos.native.repositories[active[r]] && repos.native.repositories[active[r]].json) {
+                                                        Object.assign(result, repos.native.repositories[active[r]].json);
+                                                    }
+                                                }
+
+                                                sendTo(msg.from, msg.command, result, msg.callback);
+                                            }));
+                                } else {
+                                    const result = {};
+
+                                    // merge all active repos together
+                                    for (let r = 0; r < active.length; r++) {
+                                        if (repos.native.repositories[active[r]] && repos.native.repositories[active[r]].json) {
+                                            Object.assign(result, repos.native.repositories[active[r]].json);
+                                        }
+                                    }
+
+                                    sendTo(msg.from, msg.command, result, msg.callback);
+                                }
                             }
                         }
                     });
