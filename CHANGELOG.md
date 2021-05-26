@@ -4,6 +4,16 @@
 	## __WORK IN PROGRESS__
 -->
 
+## 3.3.11 (2021-05-23)
+* (Apollon77) initialize new default ACLs in any case, only controller sets it for all objects
+* (foxriver76) do not send null as diag info in error cases or if user has selected none
+* (foxriver76) revive config.dataDir if deleted via bug in admin5 config editor
+* (bluefox) add _design/custom to the controller objects to make sure it is always provided
+* (foxriver76) fixed a bug which lead to an infinite loop if the repo was invalid and no cached sources available 
+* (foxriver76) check host existence before adding instance
+* (Apollon77) Check that password is provided when multihost discovery server should be started in secure mode
+* (AlCalzone) Fix issues with typescript adapter feature
+
 ## 3.3.10 (2021-05-14)
 * (foxriver76) only send diagnose data if license and diag dialog has been confirmed on new installations
 

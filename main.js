@@ -191,20 +191,24 @@ function startMultihost(__config) {
         }
 
         if (_config.multihostService.secure) {
-            objects.getObject('system.config', (err, obj) => {
-                if (obj && obj.native && obj.native.secret) {
-                    if (!_config.multihostService.password.startsWith(`$/aes-192-cbc:`)) {
-                        // if old encryption was used, we need to decrypt in old fashion
-                        tools.decryptPhrase(obj.native.secret, _config.multihostService.password, secret =>
-                            _startMultihost(_config, secret));
+            if (typeof _config.multihostService.password === 'string' && _config.multihostService.password.length) {
+                objects.getObject('system.config', (err, obj) => {
+                    if (obj && obj.native && obj.native.secret) {
+                        if (!_config.multihostService.password.startsWith(`$/aes-192-cbc:`)) {
+                            // if old encryption was used, we need to decrypt in old fashion
+                            tools.decryptPhrase(obj.native.secret, _config.multihostService.password, secret =>
+                                _startMultihost(_config, secret));
+                        } else {
+                            const secret = tools.decrypt(obj.native.secret, _config.multihostService.password);
+                            _startMultihost(_config, secret);
+                        }
                     } else {
-                        const secret = tools.decrypt(obj.native.secret, _config.multihostService.password);
-                        _startMultihost(_config, secret);
+                        logger.error(`${hostLogPrefix} Cannot start multihost discovery server: no system.config found (err:${err})`);
                     }
-                } else {
-                    logger.error(`${hostLogPrefix} Cannot start multihost discovery server: no system.config found (err:${err})`);
-                }
-            });
+                });
+            } else {
+                logger.error(`${hostLogPrefix} Cannot start multihost discovery server: secure mode was configured, but no secret was set. Please check the configuration!`);
+            }
         } else {
             _startMultihost(_config, false);
         }
@@ -1939,10 +1943,12 @@ async function processMessage(msg) {
                     if (systemConfig && systemConfig.common && systemConfig.common.diag && systemConfig.common.licenseConfirmed) {
                         try {
                             const obj = await collectDiagInfo(systemConfig.common.diag);
-                            tools.sendDiagInfo(obj);
+                            // if user selected 'none' we will have null here and do not want to send it
+                            if (obj) {
+                                tools.sendDiagInfo(obj);
+                            }
                         } catch (err) {
                             logger.error(`${hostLogPrefix} cannot collect diagnostics: ${err}`);
-                            tools.sendDiagInfo(null);
                         }
                     }
 
@@ -3689,7 +3695,7 @@ async function startInstance(id, wakeUp) {
                                     // Prior to requiring the main file make sure that the esbuild require hook was loaded
                                     // if this is a TypeScript adapter
                                     if (adapterMainFile.endsWith('.ts')) {
-                                        require('esbuild-register');
+                                        require('@alcalzone/esbuild-register');
                                     }
 
                                     procs[id].process = {
